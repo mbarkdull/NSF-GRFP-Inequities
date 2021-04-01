@@ -1,0 +1,273 @@
+---
+title: "Inequities in NSF Graduate Research Fellowship Program Honorable Mentions"
+---
+
+The NSF GRFP also awards honorable mentions. Are there similar disparities in honorable mentions that there are for awards?
+
+Spoiler alert: definitely. 
+
+## Effect of undergraduate institution on honorable mentions:
+
+### Number of honorable mentions per undergraduate institution 
+
+Here are the raw numbers for honorable mentions per undergraduate institution. You can see that the Ivys really dominate here, and the underrepresentation of historically Black college and universities, and tribal colleges and universities, is even more pronounced than when we looked at award rates. 
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
+# Making HTML, interactive graphs of the data:
+
+# Install and load packages:
+library(plotly)
+library(tidyverse)
+library(htmlwidgets)
+library(ggpubr)
+library(cowplot)
+
+# Read in awardee data and sort by number of awards per institution:
+honorableMentionData <- read_csv("HonorableMentionList.csv")
+honorableMentionData <- honorableMentionData %>% group_by(`Baccalaureate Institution`) %>% mutate(count_name_occurr = n())
+
+# Remove any non-UTF characters: 
+honorableMentionData$`Baccalaureate Institution` <- gsub("[^[:alnum:][:blank:]?&/\\-]", "", honorableMentionData$`Baccalaureate Institution`)
+honorableMentionData$`Baccalaureate Institution` <- gsub("U00..", "", honorableMentionData$`Baccalaureate Institution`)
+
+# Add institution types:
+awardData <- read_csv("AwardeeList.csv")
+InstitutionTypes <- select(awardData, c("Baccalaureate Institution", "UndergradType"))
+InstitutionTypes <- distinct(InstitutionTypes)
+honorableMentionData <- merge(honorableMentionData, InstitutionTypes, by = "Baccalaureate Institution")
+
+# Set a color palette:
+palette <- c("#29d6d9", "#B0413E", "#FA790F", "#BDA1C1", "#c2c2c2")
+names(palette) <- c("HBCU", "Ivy", "TCU", "Ivy equivalent", "Uncategorized")
+
+# Plot number of awards per insitution:
+undergradBarChart <- ggplot(data = honorableMentionData, 
+                            aes(x = reorder(`Baccalaureate Institution`, -count_name_occurr), 
+                                text = paste("Undergraduate Institution:", `Baccalaureate Institution`, "\n", "Number of GRFP honorable mentions:", count_name_occurr))) +
+  geom_bar(aes(fill = UndergradType), 
+           stat = "count") + 
+  scale_fill_manual(values = palette) +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   size = 2)) + 
+  labs(x = "Undergraduate institution", 
+       y = "Number of GRFP honorable mentions, total", 
+       title = "Number of GRFP honorable mentions by undergraduate institution")
+
+# Make the interactive plot:
+ggplotly(undergradBarChart, tooltip = "text")
+```
+
+### Honorable mentions per student, by undergraduate institution 
+
+When we adjust by enrollment, it's really clear that selective liberal arts colleges dominate honorable mentions. 
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
+# Add the data about each institution:
+  # Read in enrollment and endowment data:
+  institutionData <- read_csv("AwardeeInstitutionInformation.csv")
+  # Merge insitution and awardee data:
+  awardeeAndInstitution <- merge(honorableMentionData, institutionData, by = "Baccalaureate Institution")
+  # Remove any non-UTF characters: 
+  awardeeAndInstitution$`Baccalaureate Institution` <- gsub("[^[:alnum:][:blank:]?&/\\-]", "", awardeeAndInstitution$`Baccalaureate Institution`)
+  awardeeAndInstitution$`Baccalaureate Institution` <- gsub("U00..", "", awardeeAndInstitution$`Baccalaureate Institution`)
+  # Get data cleaned of NAs for each analysis:
+  enrollmentInfoForBar <- subset(awardeeAndInstitution, !is.na(Enrollment))
+  enrollmentInfoForBar$awardsPerStudent <- enrollmentInfoForBar$count_name_occurr / enrollmentInfoForBar$Enrollment
+  enrollmentInfo <- subset(enrollmentInfoForBar, select = -c(`Name`, `Field of Study`, `Current Institution`))
+  
+  enrollmentInfo <- distinct(enrollmentInfo)
+  endowmentInfo <- subset(awardeeAndInstitution, !is.na(Endowment))
+  endowmentInfo <- subset(endowmentInfo, select = -c(`Name`, `Field of Study`, `Current Institution`))
+  
+  endowmentInfo <- distinct(endowmentInfo)
+  endowmentPerStudent <- subset(enrollmentInfo, !is.na(Endowment))
+  endowmentPerStudent$EndowmentPerStudent <- as.numeric(endowmentPerStudent$EndowmentPerStudent)
+  endowmentPerStudent <- distinct(endowmentPerStudent)
+  
+# Plot data:
+enrollmentBarChart <- ggplot(data = enrollmentInfoForBar, 
+                             aes(x = reorder(`Baccalaureate Institution`, -awardsPerStudent), 
+                                 Enrollment = Enrollment, 
+                                 text = paste("Undergraduate Institution:", `Baccalaureate Institution`, "\n", "Total GRFP honorable mentions:", count_name_occurr, "\n", "GRFP honorable mentions per student:", `awardsPerStudent`))) +
+    geom_bar(mapping = aes(fill = UndergradType, 
+                           y = ((..count..)/Enrollment)), 
+             stat = "count") + 
+    scale_fill_manual(values = palette) +
+    theme(axis.text.x = element_text(angle = 90, 
+                                     size = 2, 
+                                     hjust = 0.95)) + 
+    labs(x = "Undergraduate institution", 
+         y = "Number of GRFP honorable mentions per \nstudent enrolled", 
+         title = "GRFP honorable mentions per student enrolled")
+ggplotly(enrollmentBarChart, tooltip = "text")
+```
+
+### Effect of endowment size on honorable mentions rate:
+Undergraduate endowment actually has a stronger effect for honorable mentions than it does for awards. 
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
+# Control award number and endowment by enrollment:
+awardsAndEndowmentPerStudent <- endowmentPerStudent
+awardsAndEndowmentPerStudent$awardsPerStudent <- awardsAndEndowmentPerStudent$count_name_occurr/awardsAndEndowmentPerStudent$Enrollment
+
+awardsAndEndowmentPerStudentScatterplot <- ggplot(data = awardsAndEndowmentPerStudent, 
+                                                  mapping = aes(x = EndowmentPerStudent, 
+                                                                y = awardsPerStudent, 
+                                                                text = paste("Undergraduate Institution:", 
+                                                                             `Baccalaureate Institution`, 
+                                                                             "\n", 
+                                                                             "Total GRFP honorable mentions:", 
+                                                                             count_name_occurr, 
+                                                                             "\n", "GRFP honorable mentions per student:", 
+                                                                             `awardsPerStudent`, 
+                                                                             "\n", 
+                                                                             "Endowment per student ($USD): $", 
+                                                                             `EndowmentPerStudent`))) +
+  geom_smooth(mapping = aes(x = EndowmentPerStudent, 
+                            y = awardsPerStudent),
+              method = "lm", 
+              se = FALSE, 
+              color = "#dee2e3", 
+              alpha = 0.1, 
+              inherit.aes=FALSE) +
+  geom_point(mapping = aes(color = UndergradType), 
+             alpha = 0.75) +
+  scale_colour_manual(values = palette) +
+  stat_cor(data = awardsAndEndowmentPerStudent,
+             mapping = aes(x = EndowmentPerStudent, 
+                         y = awardsPerStudent), 
+           inherit.aes=FALSE, 
+           output.type = "text", 
+           label.x = 1000000, 
+           label.y = 0.0098) + 
+  labs(x = "Endowment per student ($USD)", 
+       y = "Number of GRFP honorable mentions per \nstudent enrolled", 
+       title = "Strong positive relationship between\n number of GRFP honorable mentions and undergraduate endowment") +
+  theme_minimal_grid(10)  +
+  ylim(0, 0.01)
+
+ggplotly(awardsAndEndowmentPerStudentScatterplot, tooltip = "text")
+
+```
+
+## Effect of current institution on honorable mentions
+
+### Number of honorable mentions per current institution 
+
+The Ivys also dominate honorable mentions per current institution.  
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
+# Combine institution information by postgraduate institution:
+awardeeAndPostGradInstitution <- merge(honorableMentionData, institutionData, by.y = c("Baccalaureate Institution"), by.x = c("Current Institution"))
+# Change the count value to be the count for the current institution:
+awardeeAndPostGradInstitution <- awardeeAndPostGradInstitution %>% group_by(`Current Institution`) %>% mutate(count_name_occurr = n())
+
+# Get a list of institution types:
+InstitutionTypes <- select(honorableMentionData, c("Baccalaureate Institution", "UndergradType"))
+InstitutionTypes <- distinct(InstitutionTypes)
+
+# Merge institution types with award info:
+awardeeAndPostGradInstitution <- merge(awardeeAndPostGradInstitution, InstitutionTypes, by.y = c("Baccalaureate Institution"), by.x = c("Current Institution"))
+
+# Make the first bar graph:
+palette <- c("#29d6d9", "#B0413E", "#FA790F", "#BDA1C1", "#c2c2c2")
+names(palette) <- c("HBCU", "Ivy", "TCU", "Ivy equivalent", "Uncategorized")
+
+# Plot number of awards per insitution:
+currentBarChart <- ggplot(data = awardeeAndPostGradInstitution, 
+                            aes(x = reorder(`Current Institution`, -count_name_occurr), 
+                                text = paste("Current Institution:", `Current Institution`, "\n", "Number of GRFP honorable mentions:", count_name_occurr))) +
+  geom_bar(aes(fill = UndergradType.y), 
+           stat = "count") + 
+  scale_fill_manual(values = palette) +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   size = 2)) + 
+  labs(x = "Current institution", 
+       y = "Number of GRFP honorable mentions, total", 
+       title = "Number of GRFP honorable mentions by current institution")
+
+# Make the interactive plot:
+ggplotly(currentBarChart, tooltip = "text")
+```
+
+### Honorable mentions per student, by current institution 
+
+You see the same pattern when controlling by enrollment; we can also see that California Institute of Technology is blowing everyone else out of the water. 
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
+
+  # Remove any non-UTF characters: 
+  awardeeAndPostGradInstitution$`Current Institution` <- gsub("[^[:alnum:][:blank:]?&/\\-]", "", awardeeAndPostGradInstitution$`Current Institution`)
+  awardeeAndPostGradInstitution$`Current Institution` <- gsub("U00..", "", awardeeAndPostGradInstitution$`Current Institution`)
+  # Get data cleaned of NAs for each analysis:
+  currentEnrollmentInfoForBar <- subset(awardeeAndPostGradInstitution, !is.na(Enrollment))
+  currentEnrollmentInfoForBar$awardsPerStudent <- currentEnrollmentInfoForBar$count_name_occurr / currentEnrollmentInfoForBar$Enrollment
+  currentEnrollmentInfo <- subset(currentEnrollmentInfoForBar, select = -c(`Name`, `Field of Study`, `Baccalaureate Institution`, `UndergradType.x`))
+  
+# Plot data:
+enrollmentBarChart <- ggplot(data = currentEnrollmentInfoForBar, 
+                             aes(x = reorder(`Current Institution`, -awardsPerStudent), 
+                                 Enrollment = Enrollment, 
+                                 text = paste("Current Institution:", `Current Institution`, "\n", "Total GRFP honorable mentions:", count_name_occurr, "\n", "GRFP honorable mentions per student:", `awardsPerStudent`))) +
+    geom_bar(mapping = aes(fill = UndergradType.y, 
+                           y = ((..count..)/Enrollment)), 
+             stat = "count") + 
+    scale_fill_manual(values = palette) +
+    theme(axis.text.x = element_text(angle = 90, 
+                                     size = 2, 
+                                     hjust = 0.95)) + 
+    labs(x = "Current institution", 
+         y = "Number of GRFP honorable mentions per \nstudent enrolled", 
+         title = "GRFP honorable mentions rate per student enrolled")
+ggplotly(enrollmentBarChart, tooltip = "text")
+```
+
+### Effect of current institutions' endowment size on honorable mentions:
+
+The effect of current institutions' endowment is stronger for honorable mentions than it was for awards, but is less strong than the effect of undergraduate institution endowment. 
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
+# Control award number and endowment by enrollment:
+currentEnrollmentInfo <- select(currentEnrollmentInfoForBar, -c(`Name`, `Baccalaureate Institution`, `UndergradType.x`, `Field of Study`))
+currentEnrollmentInfo <- distinct(currentEnrollmentInfo)
+currentEnrollmentInfo$EndowmentPerStudent <- currentEnrollmentInfo$Endowment / currentEnrollmentInfo$Enrollment
+
+awardsAndEndowmentPerStudentCurrentScatterplot <- ggplot(data = currentEnrollmentInfo, 
+                                                  mapping = aes(x = EndowmentPerStudent, 
+                                                                y = awardsPerStudent, 
+                                                                text = paste("Current Institution:", 
+                                                                             `Current Institution`, 
+                                                                             "\n", 
+                                                                             "Total GRFP honorable mentions:", 
+                                                                             count_name_occurr, 
+                                                                             "\n", "GRFP honorable mentions per student:", 
+                                                                             `awardsPerStudent`, 
+                                                                             "\n", 
+                                                                             "Endowment per student ($USD): $", 
+                                                                             `EndowmentPerStudent`))) +
+  geom_smooth(mapping = aes(x = EndowmentPerStudent, 
+                            y = awardsPerStudent),
+              method = "lm", 
+              se = FALSE, 
+              color = "#dee2e3", 
+              alpha = 0.1, 
+              inherit.aes=FALSE) +
+  geom_point(mapping = aes(color = UndergradType.y), 
+             alpha = 0.75) +
+  scale_colour_manual(values = palette) +
+  stat_cor(data = currentEnrollmentInfo,
+             mapping = aes(x = EndowmentPerStudent, 
+                         y = awardsPerStudent), 
+           inherit.aes=FALSE, 
+           output.type = "text", 
+           label.x = 1000000, 
+           label.y = 0.0098) + 
+  labs(x = "Endowment per student ($USD)", 
+       y = "Number of GRFP honorable mentions per \nstudent enrolled", 
+       title = "Strong positive relationship between\n number of GRFP honorable mentions and current endowment") +
+  theme_minimal_grid(10) +
+  ylim(0, 0.01)
+
+ggplotly(awardsAndEndowmentPerStudentCurrentScatterplot, tooltip = "text")
+
+```

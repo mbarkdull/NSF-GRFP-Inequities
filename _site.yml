@@ -5,5 +5,7 @@ navbar:
   left:
     - text: "Home"
       href: index.html
+    - text: "Honorable Mentions Data"
+      href: HonorableMentions.html
     - text: "Contact Me"
       href: about.html
