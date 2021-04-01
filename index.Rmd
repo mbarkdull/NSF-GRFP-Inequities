@@ -12,7 +12,7 @@ The first way we can look at these data is to simply examine the total number of
 
 From this first visualization, you can see that Ivy League universities dominate in terms of total number of awards. 
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center'}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
 # Making HTML, interactive graphs of the data:
 
 # Install and load packages:
@@ -57,7 +57,7 @@ Of course, we know that colleges and universities vary wildly in the number of s
 
 The Ivy Leagues still dominate (though to a reduced extent, and Columbia and Penn have really fallen off), but we now see that small, selective liberal arts colleges are dominant as well. 
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center'}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
 # Add the data about each institution:
   # Read in enrollment and endowment data:
   institutionData <- read_csv("AwardeeInstitutionInformation.csv")
@@ -103,7 +103,7 @@ One factor that might be causing these patterns is endowment size. Here we can s
 
 The relationship between the two variables is highly significant (p < 2.2e-16), and moderately positive (R = 0.55). Some institutions really overperform, like Harvey Mudd College, and others, like Princeton, underperform. 
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center'}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
 # Control award number and endowment by enrollment:
 awardsAndEndowmentPerStudent <- endowmentPerStudent
 awardsAndEndowmentPerStudent$awardsPerStudent <- awardsAndEndowmentPerStudent$count_name_occurr/awardsAndEndowmentPerStudent$Enrollment
@@ -141,7 +141,8 @@ awardsAndEndowmentPerStudentScatterplot <- ggplot(data = awardsAndEndowmentPerSt
   labs(x = "Endowment per student ($USD)", 
        y = "Number of GRFs awarded per \nstudent enrolled", 
        title = "Strong positive relationship between\n number of GRFs awarded and undergraduate endowment") +
-  theme_minimal_grid(10)
+  theme_minimal_grid(10)  +
+  ylim(0, 0.015)
 
 ggplotly(awardsAndEndowmentPerStudentScatterplot, tooltip = "text")
 
@@ -155,7 +156,7 @@ NSF also reports awardees' current institutions. This data is somewhat less clea
 
 When looking purely at raw numbers of awards, we see that Ivy League universities again dominate. Compared to the effect of undergraduate institution, current students at HBCUs are awarded even fewer GRFs, demonstrating inequity by current institution type.  
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center'}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
 # Combine institution information by postgraduate institution:
 awardeeAndPostGradInstitution <- merge(grfpData, institutionData, by.y = c("Baccalaureate Institution"), by.x = c("Current Institution"))
 # Change the count value to be the count for the current institution:
@@ -193,7 +194,7 @@ ggplotly(currentBarChart, tooltip = "text")
 
 When visualized as number of GRFs awarded per student, the Ivy League institutions are even more dominant. 
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center'}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
 
   # Remove any non-UTF characters: 
   awardeeAndPostGradInstitution$`Current Institution` <- gsub("[^[:alnum:][:blank:]?&/\\-]", "", awardeeAndPostGradInstitution$`Current Institution`)
@@ -225,7 +226,7 @@ ggplotly(enrollmentBarChart, tooltip = "text")
 
 Finally, we can consider the relationship between endowment per student and number of GRFs awarded per student, by the student's current location. Here, we see an even stronger relationship between endowment and award rate than we did for undergraduate institutions, suggesting that the resources available, or possibly the prestige associated with, a student's current institution is even more important than those of their undergraduate institution. 
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center'}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width = "100%"}
 # Control award number and endowment by enrollment:
 currentEnrollmentInfo <- select(currentEnrollmentInfoForBar, -c(`Name`, `Baccalaureate Institution`, `UndergradType.x`, `Field of Study`))
 currentEnrollmentInfo <- distinct(currentEnrollmentInfo)
@@ -264,7 +265,8 @@ awardsAndEndowmentPerStudentCurrentScatterplot <- ggplot(data = currentEnrollmen
   labs(x = "Endowment per student ($USD)", 
        y = "Number of GRFs awarded per \nstudent enrolled", 
        title = "Strong positive relationship between\n number of GRFs awarded and current endowment") +
-  theme_minimal_grid(10)
+  theme_minimal_grid(10) +
+  ylim(0, 0.015)
 
 ggplotly(awardsAndEndowmentPerStudentCurrentScatterplot, tooltip = "text")
 
