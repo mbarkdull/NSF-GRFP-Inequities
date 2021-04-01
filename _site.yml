@@ -1,0 +1,9 @@
+name: "NSF-GRFP-Inequities"
+output_dir: "."
+navbar:
+  title: "Inequities in the award rates of NSF Graduate Research Fellowships"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "About Me"
+      href: about.html
