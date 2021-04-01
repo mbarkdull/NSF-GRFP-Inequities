@@ -4,7 +4,9 @@ title: "Inequities in NSF Graduate Research Fellowships"
 
 text about what the GRFP is and how we know that it's award rate is not equitable
 
-## Number of awards per institution 
+## Effect of undergraduate institution on award rate:
+
+### Number of awards per undergraduate institution 
 
 The first way we can look at these data is to simply examine the total number of GRFs awarded by undergraduate institution. In the bar graph below, I have color-coded each bar based on "institution type": Ivy League, Ivy League-equivalent, historically Black college or university (HBCU), tribal college or university (TCU), and other. You can mouse over each bar to see which institution the bar corresponds to, and how many GRF awardees that institution had in 2021. 
 
@@ -49,7 +51,7 @@ undergradBarChart <- ggplot(data = grfpData,
 ggplotly(undergradBarChart, tooltip = "text")
 ```
 
-## Awards per student 
+### Awards per student, by undergraduate institution 
 
 Of course, we know that colleges and universities vary wildly in the number of students that they have. Here, we can see the number of GRFs awarded on a per-student basis. 
 
@@ -96,7 +98,7 @@ enrollmentBarChart <- ggplot(data = enrollmentInfoForBar,
 ggplotly(enrollmentBarChart, tooltip = "text")
 ```
 
-## Effect of endowment size on GRF award rate:
+### Effect of endowment size on GRF award rate:
 One factor that might be causing these patterns is endowment size. Here we can see the relationship between endowment dollars per student and GRF awards per student. 
 
 The relationship between the two variables is highly significant (p < 2.2e-16), and moderately positive (R = 0.55). Some institutions really overperform, like Harvey Mudd College, and others, like Princeton, underperform. 
@@ -117,7 +119,7 @@ awardsAndEndowmentPerStudentScatterplot <- ggplot(data = awardsAndEndowmentPerSt
                                                                              "\n", "GRFs awarded per student:", 
                                                                              `awardsPerStudent`, 
                                                                              "\n", 
-                                                                             "Endowment per student ($USD):", 
+                                                                             "Endowment per student ($USD): $", 
                                                                              `EndowmentPerStudent`))) +
   geom_smooth(mapping = aes(x = EndowmentPerStudent, 
                             y = awardsPerStudent),
@@ -138,9 +140,132 @@ awardsAndEndowmentPerStudentScatterplot <- ggplot(data = awardsAndEndowmentPerSt
            label.y = 0.0098) + 
   labs(x = "Endowment per student ($USD)", 
        y = "Number of GRFs awarded per \nstudent enrolled", 
-       title = "Strong positive relationship between\n number of GRFs awarded and endowment") +
+       title = "Strong positive relationship between\n number of GRFs awarded and undergraduate endowment") +
   theme_minimal_grid(10)
 
 ggplotly(awardsAndEndowmentPerStudentScatterplot, tooltip = "text")
+
+```
+
+## Effect of current institution on award rate
+
+### Number of awards per current institution 
+
+NSF also reports awardees' current institutions. This data is somewhat less clear to interpret, because it reflects a mixture of awardees' postgraduate institutions, and undergraduate institutions for those awardees who are still undergrads. Nevertheless, we can examine the trends in this data as above. 
+
+When looking purely at raw numbers of awards, we see that Ivy League universities again dominate. Compared to the effect of undergraduate institution, current students at HBCUs are awarded even fewer GRFs, demonstrating inequity by current institution type.  
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center'}
+# Combine institution information by postgraduate institution:
+awardeeAndPostGradInstitution <- merge(grfpData, institutionData, by.y = c("Baccalaureate Institution"), by.x = c("Current Institution"))
+# Change the count value to be the count for the current institution:
+awardeeAndPostGradInstitution <- awardeeAndPostGradInstitution %>% group_by(`Current Institution`) %>% mutate(count_name_occurr = n())
+
+# Get a list of institution types:
+InstitutionTypes <- select(grfpData, c("Baccalaureate Institution", "UndergradType"))
+InstitutionTypes <- distinct(InstitutionTypes)
+
+# Merge institution types with award info:
+awardeeAndPostGradInstitution <- merge(awardeeAndPostGradInstitution, InstitutionTypes, by.y = c("Baccalaureate Institution"), by.x = c("Current Institution"))
+
+# Make the first bar graph:
+palette <- c("#29d6d9", "#B0413E", "#FA790F", "#BDA1C1", "#c2c2c2")
+names(palette) <- c("HBCU", "Ivy", "TCU", "Ivy equivalent", "Uncategorized")
+
+# Plot number of awards per insitution:
+currentBarChart <- ggplot(data = awardeeAndPostGradInstitution, 
+                            aes(x = reorder(`Current Institution`, -count_name_occurr), 
+                                text = paste("Current Institution:", `Current Institution`, "\n", "Number of GRFP awardees:", count_name_occurr))) +
+  geom_bar(aes(fill = UndergradType.y), 
+           stat = "count") + 
+  scale_fill_manual(values = palette) +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   size = 2)) + 
+  labs(x = "Postgraduate institution", 
+       y = "Number of GRFs awarded, total", 
+       title = "Number of GRFs awarded by current institution")
+
+# Make the interactive plot:
+ggplotly(currentBarChart, tooltip = "text")
+```
+
+### Awards per student, by current institution 
+
+When visualized as number of GRFs awarded per student, the Ivy League institutions are even more dominant. 
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center'}
+
+  # Remove any non-UTF characters: 
+  awardeeAndPostGradInstitution$`Current Institution` <- gsub("[^[:alnum:][:blank:]?&/\\-]", "", awardeeAndPostGradInstitution$`Current Institution`)
+  awardeeAndPostGradInstitution$`Current Institution` <- gsub("U00..", "", awardeeAndPostGradInstitution$`Current Institution`)
+  # Get data cleaned of NAs for each analysis:
+  currentEnrollmentInfoForBar <- subset(awardeeAndPostGradInstitution, !is.na(Enrollment))
+  currentEnrollmentInfoForBar$awardsPerStudent <- currentEnrollmentInfoForBar$count_name_occurr / currentEnrollmentInfoForBar$Enrollment
+  currentEnrollmentInfo <- subset(currentEnrollmentInfoForBar, select = -c(`Name`, `Field of Study`, `Baccalaureate Institution`, `UndergradType.x`))
+  
+# Plot data:
+enrollmentBarChart <- ggplot(data = currentEnrollmentInfoForBar, 
+                             aes(x = reorder(`Current Institution`, -awardsPerStudent), 
+                                 Enrollment = Enrollment, 
+                                 text = paste("Current Institution:", `Current Institution`, "\n", "Total GRFP awardees:", count_name_occurr, "\n", "GRFs awarded per student:", `awardsPerStudent`))) +
+    geom_bar(mapping = aes(fill = UndergradType.y, 
+                           y = ((..count..)/Enrollment)), 
+             stat = "count") + 
+    scale_fill_manual(values = palette) +
+    theme(axis.text.x = element_text(angle = 90, 
+                                     size = 2, 
+                                     hjust = 0.95)) + 
+    labs(x = "Current institution", 
+         y = "Number of GRFs awarded per \nstudent enrolled", 
+         title = "GRF award rate per student enrolled")
+ggplotly(enrollmentBarChart, tooltip = "text")
+```
+
+### Effect of endowment size on GRF award rate:
+
+Finally, we can consider the relationship between endowment per student and number of GRFs awarded per student, by the student's current location. Here, we see an even stronger relationship between endowment and award rate than we did for undergraduate institutions, suggesting that the resources available, or possibly the prestige associated with, a student's current institution is even more important than those of their undergraduate institution. 
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center'}
+# Control award number and endowment by enrollment:
+currentEnrollmentInfo <- select(currentEnrollmentInfoForBar, -c(`Name`, `Baccalaureate Institution`, `UndergradType.x`, `Field of Study`))
+currentEnrollmentInfo <- distinct(currentEnrollmentInfo)
+currentEnrollmentInfo$EndowmentPerStudent <- currentEnrollmentInfo$Endowment / currentEnrollmentInfo$Enrollment
+
+awardsAndEndowmentPerStudentCurrentScatterplot <- ggplot(data = currentEnrollmentInfo, 
+                                                  mapping = aes(x = EndowmentPerStudent, 
+                                                                y = awardsPerStudent, 
+                                                                text = paste("Current Institution:", 
+                                                                             `Current Institution`, 
+                                                                             "\n", 
+                                                                             "Total GRFP awardees:", 
+                                                                             count_name_occurr, 
+                                                                             "\n", "GRFs awarded per student:", 
+                                                                             `awardsPerStudent`, 
+                                                                             "\n", 
+                                                                             "Endowment per student ($USD): $", 
+                                                                             `EndowmentPerStudent`))) +
+  geom_smooth(mapping = aes(x = EndowmentPerStudent, 
+                            y = awardsPerStudent),
+              method = "lm", 
+              se = FALSE, 
+              color = "#dee2e3", 
+              alpha = 0.1, 
+              inherit.aes=FALSE) +
+  geom_point(mapping = aes(color = UndergradType.y), 
+             alpha = 0.75) +
+  scale_colour_manual(values = palette) +
+  stat_cor(data = currentEnrollmentInfo,
+             mapping = aes(x = EndowmentPerStudent, 
+                         y = awardsPerStudent), 
+           inherit.aes=FALSE, 
+           output.type = "text", 
+           label.x = 1000000, 
+           label.y = 0.0098) + 
+  labs(x = "Endowment per student ($USD)", 
+       y = "Number of GRFs awarded per \nstudent enrolled", 
+       title = "Strong positive relationship between\n number of GRFs awarded and current endowment") +
+  theme_minimal_grid(10)
+
+ggplotly(awardsAndEndowmentPerStudentCurrentScatterplot, tooltip = "text")
 
 ```
