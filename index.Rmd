@@ -182,7 +182,7 @@ currentBarChart <- ggplot(data = awardeeAndPostGradInstitution,
   scale_fill_manual(values = palette) +
   theme(axis.text.x = element_text(angle = 90, 
                                    size = 2)) + 
-  labs(x = "Postgraduate institution", 
+  labs(x = "Current institution", 
        y = "Number of GRFs awarded, total", 
        title = "Number of GRFs awarded by current institution")
 
