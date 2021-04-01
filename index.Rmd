@@ -2,7 +2,11 @@
 title: "Inequities in NSF Graduate Research Fellowships"
 ---
 
-text about what the GRFP is and how we know that it's award rate is not equitable
+The National Science Foundation's Graduate Research Fellowship (GRF) is an extremely prestigous, three-year fellowship awarded to U.S. citizens pursuing postgraduate studies in science, technology, engineering, math and STEM eduction. 
+
+It is [well documented](https://www.sciencemag.org/careers/2019/08/nsf-graduate-fellowships-disproportionately-go-students-few-top-schools) that GRF award rates are not equitable across institution categories. Students who complete their undergraduate degrees at prestigous and/or R1 institutions receive a disproportionate number of awards; likewise, students currently enrolled in postgraduate studies at prestigous or R1 school receive an outsized number of awards. 
+
+This page presents some visualizations of these trends, based on 2021 GRF award data from [the NSF's website](https://www.research.gov/grfp/AwardeeList.do?method=loadAwardeeList).
 
 ## Effect of undergraduate institution on award rate:
 
