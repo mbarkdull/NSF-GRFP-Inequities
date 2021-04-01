@@ -1,5 +1,5 @@
 ---
-title: "About Me"
+title: "Contact me"
 ---
 
-Why I am awesome. 
+If you have ideas about how I could improve these data visualizations, feel free to shoot me an email at mb2337 @ cornell . edu. 
